@@ -17,6 +17,17 @@ app.use(express.urlencoded({extended:true, limit:"16kb"})) //for taking url
 app.use(express.static("public")) //for taking static files
    
 app.use(cookieParser()) 
+
+
+//routes import
+
+import userRoutes from "./routes/user.routes.js";
+
+//routes declarations
+app.use("/user" , userRoutes) // for user routes
+//it will redirect to route folder
+//http://localhost:8000/user/register 
+ 
  
  
 export { app }     

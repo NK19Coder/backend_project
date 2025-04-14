@@ -59,7 +59,7 @@ userSchema.pre("save",async function(next){
   
 userSchema.methods.isPasswordMatched = async function(password){
     return await bcrypt.compare(password,this.password) // comparing password using bcryptjs
-}
+} 
 
 userSchema.methods.generateAccessToken = function(){
     return jwt.sign(
@@ -68,22 +68,22 @@ userSchema.methods.generateAccessToken = function(){
             email:this.email,
             username:this.username,
             fullname:this.fullname
-        },
-        process.env.ACCESS_TOKEN_SECRET,
-        {
+        },      
+        process.env.ACCESS_TOKEN_SECRET,    
+        {                                  
             expiresIn:process.env.ACCESS_TOKEN_EXPIRY
         }) // generating access token using jsonwebtoken
-}      
+}                 
  
 userSchema.methods.generateRefreshToken = function(){
-    return jwt.sign(
-        { 
-            _id:this._id,
-        },
-        process.env.REFRESH_TOKEN_SECRET,
-        {
+    return jwt.sign( 
+        {     
+            _id:this._id, 
+        },  
+        process.env.REFRESH_TOKEN_SECRET, 
+        {  
             expiresIn:process.env.REFRESH_TOKEN_EXPIRY
         }) // generating refresh token using jsonwebtoken
 }
- 
+    
 export const User = mongoose.model("User",userSchema)

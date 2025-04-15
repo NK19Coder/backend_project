@@ -28,39 +28,45 @@ const registerUser = asyncHandler(async (req, res) => {
     ){
         throw new ApiError(400, "All fields are required")
     }      
-    
-   const existedUser = User.findOne({$or: [{email}, {username}]}) //findOne will return the first one
+     
+   const existedUser = await User.findOne({$or: [{email}, {username}]}) //findOne will return the first one
     if(existedUser){
         throw new ApiError(409, "User already exists")
-    } 
- 
-    const avtarLocalPath = req.files?.avatar[0]?.path; 
-    const coverImgLocalPath = req.files?.coverImg[0]?.path;
+    }  
 
-    if(!avtarLocalPath){
+    // console.log(req.files);  
+ 
+    const avatarLocalPath = req.files?.avatar[0]?.path; 
+    // const coverImgLocalPath = req.files?.coverImg[0]?.path;
+    let coverImgLocalPath  // Initialize coverImgLocalPath 
+    if(req.files && Array.isArray(req.files.coverImg) && req.files.coverImg.length > 0){
+        coverImgLocalPath = req.files.coverImg[0].path; // Assign the path if it exists
+    }
+  
+    if(!avatarLocalPath){ 
         throw new ApiError(400, "Avatar is required")
     } 
 
-    const avatar = await uploadOnCloudinary(avtarLocalPath)
-    const coverImage = await uploadOnCloudinary(coverImgLocalPath)
+    const avatar = await uploadOnCloudinary(avatarLocalPath)
+    const coverImg = await uploadOnCloudinary(coverImgLocalPath)
 
     
-    if(!avtar){ 
+    if(!avatar){ 
         throw new ApiError(400, "Avatar is required")
     } 
 
    const user = await User.create({
         fullName,
         avatar: avatar.url,
-        coverImage: coverImage?.url || "",
+        coverImg: coverImg?.url || "",
         email,
         password,
-        username: username.toLowerCase(),
-    })
-
+        username: username.toLowerCase()
+    }) 
+ 
     const createdUser = await User.findById(user._id).select(
         "-password -refreshToken" // - means exclude these fields from the user object
-    )
+    ) 
     
     if(!createdUser){
         throw new ApiError(500, "Something went wrong while creating the user")
@@ -68,8 +74,8 @@ const registerUser = asyncHandler(async (req, res) => {
 
     return res.status(201).json(
         new ApiResponse(200,createdUser,"User Registered Successfully")
-    )
+    ) 
  
-})                   
+})                    
   
-export {registerUser} 
+export {registerUser}  

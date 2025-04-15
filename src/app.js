@@ -24,10 +24,7 @@ app.use(cookieParser())
 import userRoutes from "./routes/user.routes.js";
 
 //routes declarations
-app.use("/user" , userRoutes) // for user routes
-//it will redirect to route folder
-//http://localhost:8000/user/register 
- 
- 
- 
+app.use("/api/v1/user" , userRoutes) // for user routes
+//it will redirect to route folder 
+//http://localhost:8000/user/register     
 export { app }     

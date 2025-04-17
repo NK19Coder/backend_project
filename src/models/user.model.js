@@ -53,7 +53,7 @@ userSchema.pre("save",async function(next){
         return next() 
     }else{
     this.password = await bcrypt.hash(this.password,10) // hashing password using bcryptjs
-    next()
+    next() 
     }    
 }) // pre hook for hashing password before saving to db
   

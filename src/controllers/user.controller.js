@@ -4,6 +4,21 @@ import { User } from "../models/user.model.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import {ApiResponse} from "../utils/ApiResponse.js"
 
+const generateAccesAndRefreshToken = async (userId) =>{
+    try{
+        const user = await User.findById(userId)
+        const accessToken = user.generateAccessToken()
+        const refreshToken = user.generateRefreshToken()
+        user.refreshToken = refreshToken // setting refresh token in user object
+        await user.save({validateBeforeSave: false}) // saving user object in db
+ 
+        return {accessToken, refreshToken} // returning access token and refresh token
+    }catch(error){  
+        throw new ApiError(500, "Something went wrong while generating access and refresh token")
+    }
+}
+
+
 const registerUser = asyncHandler(async (req, res) => {
   //register user function
   //get user details from frontend or postman
@@ -63,7 +78,7 @@ const registerUser = asyncHandler(async (req, res) => {
         password,
         username: username.toLowerCase()
     }) 
- 
+  
     const createdUser = await User.findById(user._id).select(
         "-password -refreshToken" // - means exclude these fields from the user object
     ) 
@@ -76,6 +91,89 @@ const registerUser = asyncHandler(async (req, res) => {
         new ApiResponse(200,createdUser,"User Registered Successfully")
     ) 
  
-})                    
+})  
+
+const loginUser = asyncHandler(async (req,res)=>{
+    // req body -> data le aao
+    // username or email
+    //find the user in db
+    //password check
+    //access and refresh token send krna hai user ko
+    //send secure cookie to the user
+
+    const{email,username,password} = req.body
+    if(!username && !email){
+        throw new ApiError(400, "Username or email is required")
+    }    
+ 
+   const user = await User.findOne({$or:[{email},{username}]})
+    if(!user){
+        throw new ApiError(401, "Invalid credentials")
+    }
+   const isPasswordValid = await user.isPasswordMatched(password) // check password using bcryptjs
+     
+   if(!isPasswordValid){ 
+    throw new ApiError(401, "Invalid Password") 
+}     
+
+const {accessToken, refreshToken} = await generateAccesAndRefreshToken(user._id)
+
+const loggedInUser = await User.findById(user._id).select(
+    "-password -refreshToken" // - means exclude these fields from the user object
+)
+
+const options ={
+    httpOnly: true,
+    secure: true
+}
   
-export {registerUser}  
+return res
+        .status(200)
+        .cookie("accessToken",accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(new ApiResponse(
+            200,
+            {
+            user: loggedInUser,
+            accessToken,
+            refreshToken 
+        },
+        "User Logged In Successfully")
+         ) 
+
+})
+
+
+const logoutUser = asyncHandler(async (req,res)=>{
+    User.findByIdAndUpdate(
+        req.user._id, 
+        { 
+            $set:{
+                refreshToken: undefined // set refresh token to undefined
+            }
+        },
+        {new:true} 
+    )
+    const options ={
+        httpOnly: true,
+        secure: true
+    }
+    return res
+        .status(200)
+        .clearCookie("accessToken", options) // clear access token cookie
+        .clearCookie("refreshToken", options) // clear refresh token cookie
+        .json(new ApiResponse(
+            200,
+            {}, 
+            "User Logged Out Successfully"
+        ))
+    
+})
+
+
+// const existingUser = await User.findOne({ email: "nishantkumarcoder@gmail.com" });
+// console.log("Existing user:", existingUser);
+
+
+
+export {registerUser, loginUser, logoutUser}   
